@@ -13,7 +13,6 @@
   const logoutKey = 'sms-classic-logout-pending';
   const archive = 'http://portal.math.pku.edu.cn/htdocs/main.php';
   const services = [
-    ['预约教室', '/classroom-borrowing/borrowing-room'],
     ['讨论室预约', '/activity-room/activity-room'],
     ['我的预约', recordsPath],
     ['预约总览', overviewPath],
