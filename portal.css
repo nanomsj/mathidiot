@@ -1,0 +1,378 @@
+#sms-classic-portal {
+  --sms-red: #870d14;
+  --sms-line: #a1a1a1;
+  box-sizing: border-box;
+  width: min(1420px, 100%);
+  min-height: 100dvh;
+  margin: 0 auto;
+  color: #383838;
+  background: #f1f1f1;
+  font: 15px/1.5 "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+#sms-classic-portal *,
+#sms-classic-portal *::before,
+#sms-classic-portal *::after { box-sizing: border-box; }
+
+#sms-classic-portal header {
+  display: flex;
+  min-height: 108px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px clamp(16px, 4vw, 54px);
+  color: #fff;
+  background: #8f0100;
+}
+
+#sms-classic-portal header h1 {
+  width: min(496px, 64%);
+  margin: 0;
+}
+
+#sms-classic-portal header h1 img { display: block; width: 100%; height: auto; }
+#sms-classic-portal .sms-header-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 16px; font-size: 13px; }
+#sms-classic-portal .sms-header-feedback { flex-basis: 100%; text-align: right; }
+#sms-classic-portal h2 {
+  margin: 0;
+  color: #444;
+  font: 700 18px/1.45 SimSun, "Songti SC", serif;
+}
+
+#sms-classic-portal a,
+#sms-classic-portal button { color: inherit; font: inherit; }
+
+#sms-classic-portal button {
+  padding: 0;
+  text-align: left;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+#sms-classic-portal button:disabled { opacity: .46; cursor: default; }
+#sms-classic-portal :is(button:not(:disabled), a):hover { text-decoration: underline; }
+#sms-classic-portal :is(button, a, summary):focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+#sms-classic-portal header button { flex-shrink: 0; font-size: 13px; }
+
+#sms-classic-portal nav {
+  display: flex;
+  align-items: center;
+  min-height: 35px;
+  gap: 28px;
+  padding: 0 clamp(16px, 4vw, 54px);
+  background: #efeeee;
+  color: var(--sms-red);
+  border-bottom: 1px solid #d5cece;
+  font-size: 13px;
+}
+
+#sms-classic-portal nav > a { text-decoration: none; }
+#sms-classic-portal details { position: relative; }
+#sms-classic-portal summary { padding-block: 8px; cursor: pointer; }
+#sms-classic-portal details ul {
+  position: absolute;
+  z-index: 2;
+  inset: 100% auto auto 0;
+  min-width: max-content;
+  margin: 0;
+  padding: 5px 12px;
+  list-style: none;
+  background: #faf9f9;
+  border: 1px solid #d5cece;
+}
+
+#sms-classic-portal details li { padding-block: 4px; }
+#sms-classic-portal main { padding: 16px 20px; }
+#sms-classic-portal .sms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  height: max(440px, calc(100dvh - 175px));
+  gap: 16px;
+}
+
+#sms-classic-portal .sms-panel {
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--sms-line);
+  border-radius: 14px;
+  padding: 13px 20px 18px;
+}
+
+#sms-classic-portal .sms-panel-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  padding-bottom: 7px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--sms-line);
+}
+
+#sms-classic-portal .sms-panel-heading button { font-size: 13px; }
+#sms-classic-portal .sms-notice-list { list-style: none; margin: 0; padding: 0; }
+#sms-classic-portal .sms-notice-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 3px;
+  line-height: 20px;
+}
+
+#sms-classic-portal .sms-notice-list li:hover { background: #fff2e9; }
+#sms-classic-portal .sms-notice-list button { min-width: 0; overflow-wrap: anywhere; }
+#sms-classic-portal .sms-grid .sms-notice-list button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#sms-classic-portal time { color: var(--sms-red); white-space: nowrap; font-size: 13px; }
+#sms-classic-portal .sms-listing .sms-notice-list li { padding-block: 7px; border-bottom: 1px solid #e9e9e9; }
+#sms-classic-portal .sms-pagination { display: flex; align-items: center; gap: 16px; margin-top: 18px; font-size: 14px; }
+#sms-classic-portal .sms-article-page { max-width: 1130px; margin: 0 auto; }
+#sms-classic-portal .sms-article-page > button { margin: 0 0 9px 4px; font-size: 13px; color: #900000; }
+#sms-classic-portal .sms-article-page > .sms-panel {
+  padding: 0 0 12px;
+  border: 1px solid #555;
+  border-radius: 15px;
+}
+#sms-classic-portal .sms-article-heading {
+  padding: 25px 3% 0;
+  text-align: center;
+}
+
+#sms-classic-portal .sms-article-heading h2 {
+  color: #900000;
+  font: 400 clamp(19px, 3vw, 24px)/1.45 "Microsoft YaHei", SimSun, sans-serif;
+}
+#sms-classic-portal .sms-article-heading p { margin: 15px 0 0; padding-bottom: 25px; font-size: 13px; }
+#sms-classic-portal .sms-article-heading time { font: 13px Consolas, "Microsoft YaHei", sans-serif; color: #900000; }
+#sms-classic-portal .sms-body {
+  width: 95%;
+  margin: 0 auto;
+  padding-block: 0 10px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  overflow-x: auto;
+  white-space: pre-line;
+}
+#sms-classic-portal .sms-body :is(p, li) { margin-block: .55em; }
+#sms-classic-portal .sms-body a { color: #900000; text-decoration: underline; }
+#sms-classic-portal .sms-body img { max-width: 100%; height: auto; }
+#sms-classic-portal .sms-body table { border-collapse: collapse; }
+#sms-classic-portal .sms-body :is(td, th) { border: 1px solid var(--sms-line); padding: 4px 8px; }
+#sms-classic-portal .sms-article-page .sms-files { margin-top: 10px; padding: 10px 2.5% 15px; }
+#sms-classic-portal .sms-files h3 { margin: 0 0 10px; color: #686868; font-size: 16px; }
+#sms-classic-portal .sms-files :is(a, button) { display: block; margin-block: 5px; color: #900000; text-decoration: underline; }
+#sms-classic-portal .sms-room-entry { min-width: 0; padding: 6px 0 12px; }
+#sms-classic-portal .sms-room-picker { display: grid; gap: 14px; margin: 14px 0; }
+#sms-classic-portal .sms-room-picker label { display: grid; gap: 5px; }
+#sms-classic-portal .sms-room-picker :is(select, input) {
+  min-width: 0;
+  width: 100%;
+  background: white;
+  border: 1px solid #aaa;
+  padding: 6px;
+  color: inherit;
+  font: inherit;
+}
+#sms-classic-portal .sms-room-picker button {
+  padding: 5px 10px;
+  text-align: center;
+  border: 1px solid #999;
+  border-radius: 2px;
+  background: #eee;
+}
+#sms-classic-portal .sms-booking-layout {
+  display: grid;
+  grid-template-columns: minmax(145px, 20%) minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  background: white;
+  padding: 8px 12px 0;
+}
+#sms-classic-portal .sms-booking-layout > aside {
+  border: 0;
+  border-right: 1px solid #ddd;
+  border-radius: 0;
+  padding: 6px 13px 12px 0;
+}
+#sms-classic-portal .sms-booking-layout aside h2 { font-size: 15px; }
+#sms-classic-portal .sms-reservation-links { display: grid; gap: 3px; margin-bottom: 10px; }
+#sms-classic-portal .sms-reservation-links a { display: block; padding: 4px 8px; color: #900000; text-decoration: none; }
+#sms-classic-portal .sms-reservation-links a[aria-current="page"] { color: #fff; background: #738aa3; }
+#sms-classic-portal .sms-booking-layout .sms-room-picker { gap: 9px; margin: 8px 0; font-size: 14px; }
+#sms-classic-portal .sms-booking-layout .sms-room-picker :is(input, select) { padding: 4px 5px; }
+#sms-classic-portal .sms-room-entry .sms-room-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin: 0;
+}
+#sms-classic-portal .sms-room-entry .sms-room-picker label { display: flex; align-items: center; white-space: nowrap; }
+#sms-classic-portal .sms-room-entry .sms-room-picker select { width: clamp(120px, 19vw, 205px); }
+#sms-classic-portal .sms-room-entry .sms-room-picker input { width: auto; }
+#sms-classic-portal .sms-room-shortcuts { display: flex; flex-wrap: wrap; gap: 5px 12px; font-size: 13px; }
+#sms-classic-portal .sms-booking-schedule { min-width: 0; overflow-x: auto; }
+#sms-classic-portal .sms-booking-schedule h2 {
+  color: var(--sms-red);
+  border-left: 4px solid var(--sms-red);
+  padding-left: 10px;
+  margin-bottom: 10px;
+  font: 700 18px/1.3 "Microsoft YaHei", sans-serif;
+}
+#sms-classic-portal .sms-switch-room {
+  display: block;
+  width: min(100%, max(175px, 22%));
+  margin: 0 auto 5px;
+  padding: 3px 7px;
+  border: 1px solid #888;
+  border-radius: 2px;
+  background: #eee;
+  color: #111;
+  text-align: center;
+}
+#sms-classic-portal .sms-booking-schedule table { width: 100%; border-spacing: 2px; font-size: 16px; line-height: 1.35; }
+#sms-classic-portal .sms-booking-schedule :is(th, td) {
+  padding: 3px 8px;
+  text-align: center;
+  background: #eee;
+  border-bottom: 1px solid #c1c1c1;
+}
+#sms-classic-portal .sms-booking-schedule thead th { font-weight: normal; }
+#sms-classic-portal .sms-booking-schedule .sms-time-heading { background: white; border: 0; color: transparent; }
+#sms-classic-portal .sms-booking-schedule tbody th { width: 132px; background: #738aa3; color: white; font-weight: normal; white-space: nowrap; }
+#sms-classic-portal .sms-booking-schedule label { display: inline-flex; flex-direction: row-reverse; align-items: center; gap: 5px; }
+#sms-classic-portal .sms-booking-schedule .sms-booked-other { color: #ba1717; }
+#sms-classic-portal .sms-booking-schedule .sms-booked-own { color: #174dbc; font-weight: bold; }
+#sms-classic-portal .sms-booked-own input { margin-right: 5px; accent-color: #174dbc; }
+#sms-classic-portal .sms-reservation-theme { color: #4b4b4b; font-weight: bold; }
+#sms-classic-portal .sms-booking-footer {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) minmax(130px, 1fr) minmax(130px, 1fr) minmax(85px, .75fr);
+  gap: 6px;
+  align-items: center;
+  margin: 7px 2px 5px;
+}
+#sms-classic-portal .sms-booking-footer label { flex-direction: row; white-space: nowrap; min-width: 0; font-size: 14px; }
+#sms-classic-portal .sms-booking-footer :is(input, button) {
+  min-width: 0;
+  width: 100%;
+  height: 29px;
+  padding: 2px 5px;
+  border: 1px solid #888;
+  border-radius: 2px;
+  color: #171717;
+  background: #fff;
+  font-size: 14px;
+}
+#sms-classic-portal .sms-booking-footer .sms-booking-person { overflow: hidden; text-overflow: ellipsis; }
+#sms-classic-portal .sms-booking-footer button[type="submit"] { text-align: center; background: #eee; }
+html[data-sms-classic-view="booking"] #sms-classic-portal { min-height: auto; }
+html[data-sms-classic-view="booking"] #sms-classic-portal main { padding: 7px 0 0; }
+html[data-sms-classic-view="booking"] #app:not(.sms-native-booking-path),
+html[data-sms-classic-view="booking"] #app .sms-native-booking-path:not(.sms-native-booking-form) > :not(.sms-native-booking-path, .el-overlay),
+html[data-sms-classic-view="booking"] #app.sms-native-booking-path > :not(.sms-native-booking-path, .el-overlay) { display: none !important; }
+html[data-sms-classic-view="booking"] #app .sms-native-booking-path:not(.sms-native-booking-form) { display: contents !important; }
+html[data-sms-classic-view="booking"] #app.sms-native-booking-path { max-width: 1420px; margin: 0 auto; }
+html[data-sms-classic-view="booking"] #app.sms-native-booking-path:has(.sms-has-booking-footer) { display: contents !important; }
+html[data-sms-classic-view="booking"] #app .sms-native-booking-form {
+  width: auto;
+  max-width: none;
+  margin: 0 max(12px, calc((100% - 1420px) / 2 + 12px)) 16px max(160px, calc((100% - 1420px) / 2 + min(20%, 284px) + 24px));
+  padding: 7px 10px;
+  background: white;
+}
+html[data-sms-classic-view="booking"] #app .quick-book-form {
+  background: white;
+  max-width: 100%;
+}
+html[data-sms-classic-view="booking"] #app .sms-has-booking-footer {
+  display: contents !important;
+}
+html[data-sms-classic-view="booking"] #app .sms-has-booking-footer .quick-book-form,
+html[data-sms-classic-view="booking"] #app .sms-has-booking-footer .quick-book-form :has(.el-overlay) {
+  display: contents !important;
+}
+html[data-sms-classic-view="booking"] #app .sms-has-booking-footer .quick-book-form > :not(.el-overlay, :has(.el-overlay)),
+html[data-sms-classic-view="booking"] #app .sms-has-booking-footer .quick-book-form :has(.el-overlay) > :not(.el-overlay, :has(.el-overlay)) {
+  display: none !important;
+}
+html[data-sms-classic-view="classic"] #app,
+html[data-sms-classic-view="classic"] .el-overlay:has(.notice-detail, .notice-detail-footer, .detail-section) { display: none !important; }
+
+html[data-sms-classic-view="records"] #sms-classic-portal { min-height: auto; }
+#sms-classic-portal .sms-records-panel { min-width: 0; padding: 0 0 12px; background: white; }
+#sms-classic-portal .sms-records-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 3px 0; }
+#sms-classic-portal .sms-records-heading h2 { padding-left: 10px; border-left: 4px solid #900000; color: #900000; }
+#sms-classic-portal .sms-records-controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin: 12px 0 7px; }
+#sms-classic-portal .sms-records-filters { display: flex; flex-wrap: wrap; gap: 5px; }
+#sms-classic-portal .sms-records-controls :is(input, select, button),
+#sms-classic-portal .sms-records-table .sms-pagination button {
+  padding: 4px 9px;
+  border: 1px solid #888;
+  border-radius: 2px;
+  background: #eee;
+  color: #222;
+  font: inherit;
+}
+#sms-classic-portal .sms-records-controls input { width: min(300px, 100%); background: #fff; }
+#sms-classic-portal .sms-records-controls input[type="date"] { width: auto; margin-left: 6px; }
+#sms-classic-portal .sms-records-controls select { margin-left: 6px; background: #fff; }
+#sms-classic-portal .sms-records-filters span { align-self: center; margin-left: 5px; }
+#sms-classic-portal .sms-records-controls button[aria-pressed="true"] { border-color: #738aa3; background: #738aa3; color: white; }
+#sms-classic-portal .sms-records-table { overflow-x: auto; }
+#sms-classic-portal .sms-records-table table { width: 100%; min-width: 580px; border-spacing: 2px; }
+#sms-classic-portal .sms-records-table :is(th, td) { text-align: center; padding: 5px 8px; background: #eee; border-bottom: 1px solid #c1c1c1; }
+#sms-classic-portal .sms-records-table tbody th { background: #738aa3; color: white; font-weight: normal; white-space: pre-line; }
+#sms-classic-portal .sms-records-table tbody td button { margin-inline: 4px; color: #900000; text-decoration: underline; }
+#sms-classic-portal .sms-records-table td[data-status="current"] { color: #174dbc; }
+#sms-classic-portal .sms-records-table td[data-status="inactive"] { color: #900000; }
+#sms-classic-portal .sms-overview-grid { font-size: 13px; table-layout: fixed; }
+#sms-classic-portal .sms-overview-grid :is(thead tr:first-child, tbody tr) > th:first-child {
+  width: 126px;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+}
+#sms-classic-portal .sms-overview-grid :is(th, td) { padding: 4px 6px; }
+#sms-classic-portal .sms-overview-grid td { color: #900000; line-height: 1.35; vertical-align: top; }
+#sms-classic-portal .sms-overview-grid td > div { padding: 2px 0; }
+#sms-classic-portal .sms-overview-grid .sms-overview-reason { color: #444; }
+#sms-classic-portal .sms-overview-grid .sms-overview-occupied { background: #f6e7e6; overflow-wrap: anywhere; }
+html[data-sms-classic-view="records"] .booking-popover { display: none !important; }
+html[data-sms-classic-view="records"] #app:not(.sms-records-active),
+html[data-sms-classic-view="records"] #app.sms-records-active > :not(.sms-records-branch, .sms-records-source, .el-overlay),
+html[data-sms-classic-view="records"] #app .sms-records-branch > :not(.sms-records-branch, .sms-records-source, .el-overlay),
+html[data-sms-classic-view="records"] #app .sms-records-source > :not(.el-overlay, :has(.el-overlay)),
+html[data-sms-classic-view="records"] #app .sms-records-source :has(.el-overlay) > :not(.el-overlay, :has(.el-overlay)) { display: none !important; }
+html[data-sms-classic-view="records"] #app.sms-records-active,
+html[data-sms-classic-view="records"] #app .sms-records-branch,
+html[data-sms-classic-view="records"] #app .sms-records-source,
+html[data-sms-classic-view="records"] #app .sms-records-source :has(.el-overlay) { display: contents !important; }
+
+@media (max-width: 650px) {
+  #sms-classic-portal header { min-height: 100px; }
+  #sms-classic-portal main { padding: 12px; }
+  #sms-classic-portal .sms-grid { grid-template-columns: 1fr; grid-template-rows: repeat(4, minmax(190px, auto)); height: auto; }
+  #sms-classic-portal .sms-panel { padding-inline: 12px; }
+  #sms-classic-portal .sms-booking-layout { grid-template-columns: 1fr; }
+  #sms-classic-portal .sms-booking-layout > aside { border-right: 0; border-bottom: 1px solid #ddd; }
+  html[data-sms-classic-view="booking"] #app .sms-native-booking-form { margin-inline: 12px; }
+  #sms-classic-portal .sms-booking-footer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+#sms-classic-bookmark {
+  position: fixed;
+  right: 0;
+  top: 45%;
+  z-index: 1900;
+  padding: 7px 5px;
+  border: 1px solid #8f0100;
+  border-right: 0;
+  background: #f7f2f2;
+  color: #8f0100;
+  font: 13px/1.2 "Microsoft YaHei", sans-serif;
+  text-decoration: none;
+  writing-mode: vertical-rl;
+}
+
+#sms-classic-bookmark:hover { background: #fff; text-decoration: underline; }
