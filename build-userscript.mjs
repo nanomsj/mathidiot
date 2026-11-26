@@ -17,6 +17,8 @@ const metadata = [
   `// @version      ${manifest.version}`,
   `// @description  ${manifest.description}`,
   ...matches,
+  '// @downloadURL  https://github.com/nanomsj/mathidiot/releases/latest/download/math-portal.user.js',
+  '// @updateURL    https://github.com/nanomsj/mathidiot/releases/latest/download/math-portal.user.js',
   '// @run-at       document-idle',
   '// @noframes',
   '// @grant        GM_addStyle',

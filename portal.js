@@ -10,6 +10,7 @@
   const roomNamesKey = 'sms-classic-room-names';
   const classicHash = '#four-panels';
   const originalKey = 'sms-classic-portal-original';
+  const logoutKey = 'sms-classic-logout-pending';
   const archive = 'http://portal.math.pku.edu.cn/htdocs/main.php';
   const services = [
     ['预约教室', '/classroom-borrowing/borrowing-room'],
@@ -62,7 +63,7 @@
     sessionStorage.setItem(originalKey, '1');
     if (location.pathname !== homePath) location.assign(homePath);
     else refresh();
-  }));
+  }), button('退出登录', requestLogout));
   const feedback = link('反馈 Bug', 'https://github.com/nanomsj/mathidiot/issues');
   feedback.className = 'sms-header-feedback';
   feedback.target = '_blank';
@@ -95,6 +96,21 @@
 
   function text(node, selector) {
     return node.querySelector(selector)?.textContent.trim() ?? '';
+  }
+
+  function originalLogout(app) {
+    return [...(app?.querySelectorAll('a, button, [role="button"]') ?? [])]
+      .find((control) => control.textContent.trim() === '退出登录' && !control.disabled);
+  }
+
+  function requestLogout() {
+    const action = originalLogout(document.getElementById('app'));
+    if (action) {
+      action.click();
+      return;
+    }
+    sessionStorage.setItem(logoutKey, String(Date.now()));
+    location.assign(homePath);
   }
 
   function shortDate(date) {
@@ -213,18 +229,29 @@
     const body = element('div');
     body.className = 'sms-body';
     let files;
+    let originalPublication;
     if (dialog) {
       const content = dialog.querySelector('.detail-content, .notice-content, .modal-body > div:nth-child(2)');
       if (content) copyContent(content, body);
       const title = noticeTitleKey(record.title);
       const prefix = document.createRange();
       prefix.setStart(body, 0);
-      const duplicate = [...body.querySelectorAll('h1, h2, h3, p, div')].find((node) => {
-        if (!title || noticeTitleKey(node.textContent) !== title || node.querySelector('img, table, a[href]')) return false;
+      const atStart = (node) => {
+        if (node.querySelector('img, table, a[href]')) return false;
         prefix.setEndBefore(node);
         return !prefix.toString().trim() && !prefix.cloneContents().querySelector('img, table, a[href]');
-      });
+      };
+      const duplicate = [...body.querySelectorAll('h1, h2, h3, p, div')].find((node) =>
+        title && noticeTitleKey(node.textContent) === title && atStart(node));
       duplicate?.remove();
+      for (const node of body.querySelectorAll('p, div')) {
+        const metadata = node.textContent.trim()
+          .match(/^发布日期\s*[:：]\s*(\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?)(?:\s*[\[［]([^\]］]+)[\]］])?$/);
+        if (!metadata || !atStart(node)) continue;
+        originalPublication = { date: metadata[1], author: metadata[2] };
+        node.remove();
+        break;
+      }
     }
     if (dialog) {
       const attachmentRows = [...dialog.querySelectorAll('.attachment-row, .detail-attachments li')];
@@ -248,7 +275,7 @@
     if (!body.textContent.trim() && !body.querySelector('img') && !files) {
       body.append(element('p', dialog ? '暂无正文' : '正文加载失败，请返回列表后重试。'));
     }
-    return { body, files, hasContent };
+    return { body, files, hasContent, originalPublication };
   }
 
   function showNotice(record, fromHome = false, fallback) {
@@ -427,8 +454,14 @@
     }));
     const heading = element('div');
     heading.className = 'sms-article-heading';
-    const date = element('p', '发布日期：');
-    date.append(element('time', record.date));
+    const publication = record.originalPublication;
+    const date = element('p', publication ? '原文发布日期：' : '发布日期：');
+    const time = element('time', publication?.date || record.date);
+    if (publication && record.date && publication.date !== record.date) {
+      time.title = 'MathSmart 发布记录：' + record.date;
+    }
+    date.append(time);
+    if (publication?.author) date.append(' [' + publication.author + ']');
     heading.append(element('h2', record.title), date);
     panel.append(heading, record.loading ? element('p', '正在加载正文…') : record.body);
     page.append(panel);
@@ -1135,6 +1168,18 @@
       window.scrollTo(0, 0);
     }
     const app = document.getElementById('app');
+    const pendingLogout = Number(sessionStorage.getItem(logoutKey));
+    if (pendingLogout) {
+      if (Date.now() - pendingLogout > 15000 || path !== homePath) sessionStorage.removeItem(logoutKey);
+      else {
+        const action = originalLogout(app);
+        if (action) {
+          sessionStorage.removeItem(logoutKey);
+          action.click();
+          return;
+        }
+      }
+    }
     const original = Boolean(sessionStorage.getItem(originalKey));
     if (original) {
       if (!returnBookmark.isConnected) document.body.append(returnBookmark);

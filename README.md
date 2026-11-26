@@ -2,23 +2,27 @@
 
 为北大数学科学学院的 MathSmart 提供四宫格通知、正文阅读和讨论室预约界面。使用自己的账号登录 MathSmart 即可。
 
-## Tampermonkey 安装
+## 安装
 
-1. 安装 [Tampermonkey（篡改猴）](https://www.tampermonkey.net/)。
-2. 确认浏览器允许 Tampermonkey 运行用户脚本。如果扩展详情中有「允许运行用户脚本」开关，请打开它。旧版 Chrome 可参照 [Tampermonkey 官方说明](https://www.tampermonkey.net/faq.php#Q209)打开开发者模式。
-3. 点击[安装数院四栏版脚本](https://raw.githubusercontent.com/nanomsj/mathidiot/main/math-portal.user.js)，在 Tampermonkey 弹出的页面点「安装」。
-4. 登录并刷新 [MathSmart 首页](https://mathsmart.pku.edu.cn/schedule)。
+两种安装方式共用同版本的 JavaScript、CSS 和院徽图片，通知和预约功能相同。任选一种即可；切换安装方式时，请先禁用另一版。
 
-如果之前装过本项目的 Chrome 扩展，先在浏览器扩展管理页禁用它，再启用 Tampermonkey 版。
+### 方式一：Tampermonkey（篡改猴）
 
-## Chrome 扩展安装
+1. 安装 [Tampermonkey](https://www.tampermonkey.net/)。Chrome 若有「允许运行用户脚本」开关，在 Tampermonkey 的扩展详情中将其打开。旧版 Chrome 可参照 [Tampermonkey 官方说明](https://www.tampermonkey.net/faq.php#Q209)开启开发者模式。
+2. 点击[安装 `math-portal.user.js`](https://github.com/nanomsj/mathidiot/releases/latest/download/math-portal.user.js)，在安装确认页点「安装」。
+3. 如果浏览器直接下载了文件，打开 Tampermonkey 管理面板的「实用工具」，在「从文件导入」处选择下载的 `.user.js` 文件并确认安装。
+4. 登录并刷新 [MathSmart](https://mathsmart.pku.edu.cn/schedule)。
 
-1. 下载并解压此项目的 ZIP，或克隆仓库。
+Tampermonkey 会按自己的更新周期检查版本，自动更新可能有延迟。需要马上更新时，再打开上面的脚本链接安装最新版。
+
+### 方式二：Chrome 扩展 ZIP
+
+1. 下载并解压 [mathidiot-chrome.zip](https://github.com/nanomsj/mathidiot/releases/latest/download/mathidiot-chrome.zip)。也可以在仓库首页点击「Code → Download ZIP」，解压源码。
 2. 在 Chrome 地址栏输入 `chrome://extensions/`，打开「开发者模式」。
 3. 点击「加载未打包的扩展程序」，选择包含 `manifest.json` 的文件夹。
-4. 登录并刷新 [MathSmart 首页](https://mathsmart.pku.edu.cn/schedule)。
+4. 登录并刷新 [MathSmart](https://mathsmart.pku.edu.cn/schedule)。
 
-更新时，用新版替换扩展文件，在扩展管理页点「重新加载」，再刷新 MathSmart。
+更新时，下载新版 ZIP 并将文件解压到原扩展文件夹，在扩展管理页点「重新加载」，再刷新 MathSmart。
 
 ## 使用
 

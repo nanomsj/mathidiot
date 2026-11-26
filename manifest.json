@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "数院四栏通知",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "在 MathSmart 首页显示四栏通知和常用服务。",
   "action": { "default_title": "打开数院四栏版" },
   "background": { "service_worker": "return-to-classic.js" },
