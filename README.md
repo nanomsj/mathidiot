@@ -33,6 +33,16 @@ Tampermonkey 会按自己的更新周期检查版本，自动更新可能有延�
 - 查看教师名单
 - 点击右上角可切回新版主页，也可以切换回来。
 
+## 界面截图
+
+### 四栏通知首页
+
+![四栏通知首页](docs/screenshots/notifications.png)
+
+### 讨论室预约
+
+![讨论室预约](docs/screenshots/discussion-room.png)
+
 ## 开发
 
 直接修改 `portal.js` 和 `portal.css`，然后在 Chrome 重新加载扩展。运行 `node build-userscript.mjs` 可用同一份源码生成独立的 `math-portal.user.js`。MathSmart 更新页面结构时，通知选择器可能需要调整。
