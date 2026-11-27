@@ -130,6 +130,8 @@ const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
   let overviewView;
   let archiveSections = new Map();
   let archiveStatus = '';
+  let bookingRoomIds = new Map();
+  let bookingRoomRequest;
   const homeSize = new ResizeObserver(([entry]) => fitHome(entry.target));
 
   async function readArchive(id = '') {
@@ -649,6 +651,10 @@ const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
     return JSON.parse(sessionStorage.getItem(roomChoiceKey) || 'null');
   }
 
+  function roomLabel(number, name) {
+    return [number, name].filter(Boolean).join(' · ');
+  }
+
   function roomControls(app) {
     const rooms = new Map();
     for (const name of app.querySelectorAll('.room-name-text')) {
@@ -657,10 +663,36 @@ const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
         .find((control) => control.textContent.includes('立即预约') && !control.disabled);
       if (!action) continue;
       const number = text(card, '.room-no-tag');
-      const label = [number, name.textContent.trim()].filter(Boolean).join(' · ');
+      const label = roomLabel(number, name.textContent.trim());
       rooms.set(label, action);
     }
     return rooms;
+  }
+
+  function loadBookingRoomIds() {
+    if (bookingRoomRequest) return;
+    const token = localStorage.getItem('token');
+    bookingRoomRequest = fetch('/api/activity-rooms/list?page=0&size=10000', {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      redirect: 'error',
+      signal: AbortSignal.timeout(8000),
+    }).then(response => {
+      if (!response.ok) throw new Error('Room directory unavailable');
+      return response.json();
+    }).then(({ data }) => {
+      const entries = data?.content ?? data?.data ?? data;
+      if (!Array.isArray(entries)) return;
+      const rooms = new Map();
+      for (const entry of entries) {
+        const activity = entry.activityRoom ?? entry.meetingRoom ?? entry;
+        const { roomName, roomNo } = entry.publicRoom ?? {};
+        const id = entry.id || activity.id;
+        if (!id || !roomName || activity.roomStatus === 'maintenance') continue;
+        if (!['all', 'card-only'].includes(activity.displayMode || 'all')) continue;
+        rooms.set(roomLabel(roomNo || activity.roomNo, roomName), String(id));
+      }
+      bookingRoomIds = rooms;
+    }).catch(() => {}).finally(scheduleRefresh);
   }
 
   function field(caption, control) {
@@ -738,8 +770,9 @@ const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
     return reservationLayout(panel);
   }
 
-  function bookingUrl(date) {
-    const url = new URL(location.href);
+  function bookingUrl(date, roomId) {
+    const url = roomId ? new URL(bookingPath, location.origin) : new URL(location.href);
+    if (roomId) url.searchParams.set('roomId', roomId);
     url.searchParams.set('clickedDate', date);
     return url.href;
   }
@@ -1193,13 +1226,18 @@ const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
     scheduleRefresh();
   }
 
-  function renderBooking(data, choice, names, official) {
+  function renderBooking(data, choice, names, official, draft) {
     const sidebar = reservationSidebar();
     sidebar.append(element('h2', '选择房间和日期'));
-    const picker = roomPicker(names, choice, (next) => {
-      if (next.room === choice.room) {
+    const selection = {
+      room: names.includes(draft?.room) ? draft.room : choice.room,
+      date: draft?.date || choice.date,
+    };
+    const picker = roomPicker(names, selection, (next) => {
+      const roomId = bookingRoomIds.get(next.room);
+      if (next.room === choice.room || roomId) {
         setRoomChoice(next, '');
-        location.assign(bookingUrl(next.date));
+        location.assign(bookingUrl(next.date, next.room === choice.room ? undefined : roomId));
       } else {
         setRoomChoice(next, 'room');
         location.assign(roomsPath);
@@ -1218,7 +1256,7 @@ const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
     switchRoom.className = 'sms-switch-room';
     schedule.append(switchRoom);
     if (!data.slots.length) {
-      schedule.append(element('p', data.ready ? '所选日期没有可显示的时段。' : '正在加载时段…'));
+      schedule.append(element('p', data.ready ? '所选日期没有可预约的时段。' : '正在加载时段…'));
     } else {
       const table = element('table');
       const heading = element('thead');
@@ -1275,7 +1313,7 @@ const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
       table.append(heading, body);
       schedule.append(table);
     }
-    if (official && data.slots.length) schedule.append(bookingFooter(official));
+    if (official) schedule.append(bookingFooter(official));
     return reservationLayout(schedule, sidebar);
   }
 
@@ -1308,20 +1346,30 @@ const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
     const requested = url.searchParams.get('clickedDate');
     const date = /^\d{4}-\d{2}-\d{2}$/.test(requested ?? '') ? requested : today();
     const data = readBooking(app, date);
-    const choice = { room: stored?.room || data.room, date };
-    const names = JSON.parse(sessionStorage.getItem(roomNamesKey) || '[]');
+    if (data.room) loadBookingRoomIds();
+    const currentId = url.searchParams.get('roomId');
+    const currentRoom = [...bookingRoomIds].find(([, id]) => id === currentId)?.[0];
+    const choice = { room: currentRoom || roomLabel(data.roomNumber, data.room) || stored?.room || '', date };
+    const names = bookingRoomIds.size ? [...bookingRoomIds.keys()] : JSON.parse(sessionStorage.getItem(roomNamesKey) || '[]');
     if (choice.room && !names.includes(choice.room)) names.unshift(choice.room);
-    const official = exposeBookingForm(app, data.form);
-    data.form?.classList.toggle('sms-has-booking-footer', Boolean(official && data.slots.length));
+    const canBook = data.slots.some(({ input }) => input && !input.disabled);
+    if (!canBook || !data.form) app.classList.remove('sms-native-booking-path');
+    const official = canBook ? exposeBookingForm(app, data.form) : null;
+    data.form?.classList.toggle('sms-has-booking-footer', Boolean(official));
     root.dataset.smsClassicView = 'booking';
     const next = JSON.stringify([
-      choice, data.room, data.roomNumber, data.ready,
+      choice, names, data.room, data.roomNumber, data.ready,
       official && [official.names, official.submit.disabled],
       data.slots.map((slot) => [slot.time, slot.input?.checked, slot.input?.disabled, slot.state, slot.own]),
     ]);
     if (next !== signature) {
+      const previous = signature && main.querySelector('.sms-reservation-sidebar .sms-room-picker');
+      const draft = previous ? {
+        room: previous.querySelector('select').value,
+        date: previous.querySelector('input[type="date"]').value,
+      } : null;
       signature = next;
-      main.replaceChildren(renderBooking(data, choice, names, official));
+      main.replaceChildren(renderBooking(data, choice, names, official, draft));
     }
   }
 
@@ -1421,6 +1469,7 @@ const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
     childList: true,
     subtree: true,
     characterData: true,
+    attributeFilter: ['disabled'],
   });
   window.addEventListener('popstate', scheduleRefresh);
   window.addEventListener('hashchange', scheduleRefresh);
