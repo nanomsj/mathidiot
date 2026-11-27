@@ -1,5 +1,7 @@
 (() => {
   const groups = ['学院通知', '教务信息', '学院制度及规定', '学生园地'];
+  const archiveLimit = 50;
+  const localSectionParam = 'mathidiot-section';
   const homePath = '/schedule';
   const listingPath = '/schedule/academic-notice';
   const roomsPath = '/activity-room/activity-room';
@@ -12,6 +14,7 @@
   const originalKey = 'sms-classic-portal-original';
   const logoutKey = 'sms-classic-logout-pending';
   const archive = 'http://portal.math.pku.edu.cn/htdocs/main.php';
+  const archiveArticle = 'http://portal.math.pku.edu.cn/htdocs/showarticle.php';
   const services = [
     ['讨论室预约', '/activity-room/activity-room'],
     ['我的预约', recordsPath],
@@ -85,6 +88,7 @@
   let signature = '';
   let panels = new Map();
   let listing = null;
+  let listedTitles = new Set();
   let article = null;
   let pending = null;
   let listingTitle = '';
@@ -92,6 +96,51 @@
   let queuedNotice = null;
   let reservationView;
   let overviewView;
+  let archiveSections = new Map();
+  let archiveStatus = '';
+  const homeSize = new ResizeObserver(([entry]) => fitHome(entry.target));
+
+  async function readArchive(id = '') {
+    const url = id ? `${archiveArticle}?id=${id}` : archive;
+    const html = typeof smsPortalReadArchive === 'function'
+      ? await smsPortalReadArchive(url)
+      : (await chrome.runtime.sendMessage({ type: 'sms-read-archive', id }))?.html;
+    if (!html) throw new Error('Archive unavailable');
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  function loadArchive() {
+    if (archiveStatus) return;
+    archiveStatus = 'loading';
+    readArchive().then(archivePage => {
+      for (const section of archivePage.querySelectorAll('.module')) {
+        const title = text(section, '.module_title');
+        if (!groups.includes(title)) continue;
+        const rows = [];
+        for (const row of section.querySelectorAll('.module_content > a[href]')) {
+          const raw = safeUrl(row.getAttribute('href'), false, archive);
+          if (!raw) continue;
+          const href = new URL(raw);
+          const id = href.searchParams.get('id');
+          const notice = text(row, '.module_item');
+          if (href.origin !== new URL(archive).origin || href.pathname !== '/htdocs/showarticle.php' || !/^\d{1,10}$/.test(id ?? '') || !notice) continue;
+          rows.push({ title: notice, date: text(row, '.module_date'), archiveId: id, href: href.href });
+          if (rows.length === archiveLimit) break;
+        }
+        archiveSections.set(title, rows);
+      }
+      archiveStatus = archiveSections.size ? 'ready' : 'unavailable';
+    }).catch(() => { archiveStatus = 'unavailable'; }).finally(scheduleRefresh);
+  }
+
+  function combineNotices(current, label, seenTitles) {
+    const currentTitles = new Set(current.map(({ title }) => noticeTitleKey(title)));
+    const older = (archiveSections.get(label) ?? []).filter(({ title }) => {
+      const key = noticeTitleKey(title);
+      return !currentTitles.has(key) && !seenTitles?.has(key);
+    });
+    return [...current, ...older];
+  }
 
   function text(node, selector) {
     return node.querySelector(selector)?.textContent.trim() ?? '';
@@ -153,11 +202,11 @@
     };
   }
 
-  function safeUrl(value, image = false) {
+  function safeUrl(value, image = false, base = location.href) {
     if (!value) return null;
     if (image && /^data:image\/(?:png|jpe?g|gif|webp|avif|bmp);base64,/i.test(value)) return value;
     try {
-      const url = new URL(value, location.href);
+      const url = new URL(value, base);
       if (url.protocol === 'https:' || (!image && ['http:', 'mailto:'].includes(url.protocol))) return url.href;
     } catch {
       return null;
@@ -172,7 +221,7 @@
     'text-decoration', 'line-height', 'white-space', 'color', 'vertical-align',
   ];
 
-  function copyContent(source, target) {
+  function copyContent(source, target, base = location.href) {
     for (const child of source.childNodes) {
       if (child.nodeType === Node.TEXT_NODE) {
         target.append(document.createTextNode(child.data));
@@ -182,14 +231,14 @@
       const tag = child.localName;
       if (removedTags.has(tag)) continue;
       if (!preservedTags.has(tag)) {
-        copyContent(child, target);
+        copyContent(child, target, base);
         continue;
       }
       const node = element(tag);
       if (child.id) node.id = 'sms-notice-' + child.id;
       if (tag === 'a') {
         const sourceHref = child.getAttribute('href');
-        const href = sourceHref?.startsWith('#') ? '#sms-notice-' + sourceHref.slice(1) : safeUrl(sourceHref);
+        const href = sourceHref?.startsWith('#') ? '#sms-notice-' + sourceHref.slice(1) : safeUrl(sourceHref, false, base);
         if (href) {
           node.href = href;
           if (child.hasAttribute('download')) node.download = child.download;
@@ -200,8 +249,13 @@
         }
       }
       if (tag === 'img') {
-        const src = safeUrl(child.getAttribute('src'), true);
-        if (!src) continue;
+        const rawSource = child.getAttribute('src');
+        const src = safeUrl(rawSource, true, base);
+        if (!src) {
+          const imageLink = base !== location.href ? safeUrl(rawSource, false, base) : null;
+          if (imageLink?.startsWith('http://')) target.append(link(child.alt || '查看正文图片', imageLink));
+          continue;
+        }
         node.src = src;
         node.alt = child.alt || '正文图片';
         node.loading = 'lazy';
@@ -219,7 +273,7 @@
       if (['left', 'center', 'right', 'justify'].includes(child.getAttribute('align'))) {
         node.style.textAlign = child.getAttribute('align');
       }
-      copyContent(child, node);
+      copyContent(child, node, base);
       target.append(node);
     }
   }
@@ -364,12 +418,60 @@
     }
   }
 
+  function showArchivedNotice(record) {
+    const opened = { ...record, loading: true };
+    article = opened;
+    signature = '';
+    scheduleRefresh();
+    window.scrollTo(0, 0);
+
+    readArchive(record.archiveId).then(source => {
+      const content = source.querySelector('.module_center .module_content');
+      const heading = source.querySelector('.article_header');
+      if (!content || !heading) throw new Error('Archive article unavailable');
+      const body = element('div');
+      body.className = 'sms-body';
+      copyContent(content, body, record.href);
+      // 浏览器修正旧门户的段落嵌套时，可能为同一附件生成一个额外的空链接。
+      const attachments = new Map();
+      for (const anchor of source.querySelectorAll('#news-attach a[href]')) {
+        const href = safeUrl(anchor.getAttribute('href'), false, record.href);
+        if (!href || attachments.get(href)) continue;
+        attachments.set(href, anchor.textContent.trim().replace(/^附件\s*[:：]\s*/, ''));
+      }
+      if (attachments.size) {
+        const files = element('section');
+        files.className = 'sms-panel sms-files';
+        files.append(element('h3', '附件下载'), ...Array.from(attachments, ([href, name]) => link(name || '下载附件', href)));
+        opened.files = files;
+      }
+      const date = text(heading, '.article_date').match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?/);
+      if (date) opened.date = date[0];
+      if (!body.textContent.trim() && !body.querySelector('img') && !attachments.size) {
+        body.append(link('在旧门户查看原文', record.href));
+      }
+      opened.body = body;
+    }).catch(() => {
+      const body = element('div');
+      body.className = 'sms-body';
+      body.append(element('p', '旧站正文暂时无法加载。'), link('在旧门户查看原文', record.href));
+      opened.body = body;
+    }).finally(() => {
+      opened.loading = false;
+      if (article === opened) scheduleRefresh();
+    });
+  }
+
   function rowList(records, label) {
     const list = element('ul');
     list.className = 'sms-notice-list';
     for (const record of records) {
       const row = element('li');
-      const title = button(record.title, () => label ? findFullNotice(record, label) : showNotice(record));
+      const title = button(record.title, () => {
+        if (record.archiveId) showArchivedNotice(record);
+        else if (label) findFullNotice(record, label);
+        else showNotice(record);
+      });
       title.title = record.title;
       row.append(title, element('time', shortDate(record.date)));
       list.append(row);
@@ -379,7 +481,7 @@
 
   function renderHome() {
     const grid = element('div');
-    grid.className = 'sms-grid';
+    grid.className = 'sms-grid sms-home-grid';
     for (const label of groups) {
       const panel = element('section');
       panel.className = 'sms-panel';
@@ -387,23 +489,49 @@
       heading.className = 'sms-panel-heading';
       heading.append(element('h2', label));
       const source = panels.get(label);
+      const records = combineNotices(source?.rows ?? [], label);
       if (source?.more) {
         heading.append(button('查看全部', () => {
           listingTitle = label;
           panels.get(label)?.more?.click();
         }));
+      } else if (records.length) {
+        heading.append(link('查看全部', `${listingPath}?${new URLSearchParams({ [localSectionParam]: label })}`));
       }
       panel.append(heading);
-      if (label === '学院制度及规定' && !source) {
-        panel.append(link('查看旧门户留档', archive));
-      } else if (source?.rows.length) {
-        panel.append(rowList(source.rows.slice(0, 6), label));
+      if (records.length) {
+        panel.append(rowList(records, label));
       } else {
-        panel.append(element('p', '暂无通知'));
+        const message = archiveStatus === 'loading' ? '正在加载旧站通知…'
+          : archiveStatus === 'unavailable' ? '旧站通知暂时无法加载' : '暂无通知';
+        panel.append(element('p', message));
       }
       grid.append(panel);
     }
     return grid;
+  }
+
+  function fitHome(grid) {
+    if (!grid.isConnected) return;
+    const desktop = matchMedia('(min-width: 651px) and (min-height: 450px)').matches;
+    const rowHeight = parseFloat(getComputedStyle(grid).getPropertyValue('--sms-home-row-height'));
+    for (const panel of grid.children) {
+      const list = panel.querySelector('.sms-notice-list');
+      if (!list) continue;
+      const bottom = panel.getBoundingClientRect().top + panel.clientTop + panel.clientHeight;
+      const padding = parseFloat(getComputedStyle(panel).paddingBottom);
+      const remaining = bottom - padding - list.getBoundingClientRect().top;
+      const count = desktop ? Math.max(0, Math.floor((remaining + 0.05) / rowHeight)) : 8;
+      for (const [index, row] of [...list.children].entries()) row.hidden = index >= count;
+    }
+  }
+
+  function listingGroup() {
+    const category = new URLSearchParams(location.search).get('category') ?? '';
+    if (category.includes('student-garden')) return '学生园地';
+    if (category.includes('college')) return '学院通知';
+    if (category.includes('academic') || category.includes('teaching')) return '教务信息';
+    return groups.find(label => listing?.label?.includes(label)) ?? listingTitle;
   }
 
   function renderListing() {
@@ -411,8 +539,17 @@
     panel.className = 'sms-panel sms-listing';
     const heading = element('div');
     heading.className = 'sms-panel-heading';
-    heading.append(element('h2', listing?.label || listingTitle || '通知列表'));
+    const localGroup = new URLSearchParams(location.search).get(localSectionParam);
+    const label = listingGroup();
+    heading.append(element('h2', localGroup || label || listing?.label || '通知列表'));
     panel.append(heading);
+    if (groups.includes(localGroup)) {
+      const records = combineNotices(panels.get(localGroup)?.rows ?? [], localGroup);
+      if (records.length) panel.append(rowList(records));
+      else if (archiveStatus === 'loading') panel.append(element('p', '正在加载旧站通知…'));
+      else panel.append(element('p', archiveStatus === 'unavailable' ? '旧站通知暂时无法加载' : '暂无通知'));
+      return panel;
+    }
     if (queuedNotice) {
       panel.append(element('p', Date.now() - queuedNotice.started > 5000
         ? '未在栏目中找到这条通知。' : '正在查找通知正文…'));
@@ -423,7 +560,11 @@
       panel.append(element('p', '正在加载通知…'));
       return panel;
     }
-    panel.append(listing.rows.length ? rowList(listing.rows) : element('p', '暂无通知'));
+    const records = listing.next ? listing.rows : combineNotices(listing.rows, label, listedTitles);
+    panel.append(records.length ? rowList(records) : element('p', archiveStatus === 'loading' ? '正在加载旧站通知…' : '暂无通知'));
+    if (!listing.next && groups.includes(label) && archiveStatus === 'unavailable') {
+      panel.append(element('p', '旧站通知暂时无法加载'));
+    }
     const pagination = element('div');
     pagination.className = 'sms-pagination';
     const previous = button('上一页', () => listing?.previous?.click());
@@ -1163,6 +1304,7 @@
     if (viewUrl !== lastUrl) {
       lastUrl = viewUrl;
       article = null;
+      listedTitles = new Set();
       signature = '';
       window.scrollTo(0, 0);
     }
@@ -1202,6 +1344,7 @@
       refreshBooking(app, path);
       return;
     }
+    loadArchive();
     if (path === homePath) {
       panels = sourcePanels(app);
       if (!panels.has('学院通知') || !panels.has('教务信息') || !panels.has('学生园地')) {
@@ -1215,6 +1358,9 @@
       }
     } else {
       listing = sourceListing(app);
+      for (const { title } of [...(panels.get(listingGroup())?.rows ?? []), ...(listing?.rows ?? [])]) {
+        listedTitles.add(noticeTitleKey(title));
+      }
       findQueuedNotice();
     }
     if (!container.isConnected) app.before(container);
@@ -1223,10 +1369,16 @@
       ? [...panels].map(([label, { more, rows }]) => [label, !!more, rows.map(({ title, date }) => [title, date])])
       : listing && [listing.label, listing.total, listing.current, listing.empty,
         listing.rows.map(({ title, date }) => [title, date])];
-    const next = article ? JSON.stringify([article.title, article.loading]) : JSON.stringify([path, data]);
+    const next = article ? JSON.stringify([article.title, article.loading]) : JSON.stringify([path, data, archiveStatus]);
     if (signature === next) return;
     signature = next;
+    homeSize.disconnect();
     main.replaceChildren(article ? renderArticle() : path === homePath ? renderHome() : renderListing());
+    const grid = main.querySelector('.sms-home-grid');
+    if (grid) {
+      fitHome(grid);
+      homeSize.observe(grid);
+    }
   }
 
   function scheduleRefresh() {

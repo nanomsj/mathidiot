@@ -9,7 +9,7 @@ const [manifestText, css, script, logo] = await Promise.all([
   readFile(new URL('college-logo.png', directory)),
 ]);
 const manifest = JSON.parse(manifestText);
-const matches = manifest.content_scripts[0].matches.map((match) => `// @match        ${match}`);
+const matches = manifest.content_scripts.flatMap(({ matches }) => matches.map((match) => `// @match        ${match}`));
 const metadata = [
   '// ==UserScript==',
   `// @name         ${manifest.name}`,
@@ -23,6 +23,8 @@ const metadata = [
   '// @noframes',
   '// @grant        GM_addStyle',
   '// @grant        GM_registerMenuCommand',
+  '// @grant        GM_xmlhttpRequest',
+  '// @connect      portal.math.pku.edu.cn',
   '// ==/UserScript==',
 ].join('\n');
 
@@ -34,6 +36,13 @@ await writeFile(
     `const smsPortalLogoUrl = 'data:image/png;base64,${logo.toString('base64')}';`,
     `GM_addStyle(${JSON.stringify(css)});`,
     "GM_registerMenuCommand('打开数院四栏版', () => location.assign('https://mathsmart.pku.edu.cn/schedule#four-panels'));",
+    `const smsPortalReadArchive = (url) => new Promise((resolve, reject) => {
+  GM_xmlhttpRequest({
+    method: 'GET', url, anonymous: true, timeout: 7000,
+    onload: ({ status, responseText }) => status === 200 ? resolve(responseText) : reject(new Error('Archive unavailable')),
+    onerror: reject, ontimeout: reject, onabort: reject,
+  });
+});`,
     script,
   ].join('\n\n'),
 );
