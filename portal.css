@@ -1,3 +1,6 @@
+html[data-sms-classic-view],
+html[data-sms-classic-view] > body { scrollbar-width: none; }
+
 #sms-classic-portal {
   --sms-red: #870d14;
   --sms-line: #a1a1a1;
@@ -229,7 +232,7 @@
 #sms-classic-portal .sms-room-entry .sms-room-picker input { width: auto; }
 #sms-classic-portal .sms-room-shortcuts { display: flex; flex-wrap: wrap; gap: 5px 12px; font-size: 13px; }
 #sms-classic-portal .sms-booking-schedule { min-width: 0; overflow-x: auto; }
-#sms-classic-portal .sms-booking-schedule h2 {
+#sms-classic-portal :is(.sms-booking-schedule h2, .sms-directory-heading) {
   color: var(--sms-red);
   border-left: 4px solid var(--sms-red);
   padding-left: 10px;
@@ -316,6 +319,74 @@ html[data-sms-classic-view="booking"] #app .sms-has-booking-footer .quick-book-f
 html[data-sms-classic-view="classic"] #app,
 html[data-sms-classic-view="classic"] .el-overlay:has(.notice-detail, .notice-detail-footer, .detail-section) { display: none !important; }
 
+html[data-sms-classic-view="directory"] body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  margin: 0;
+  background: #f1f1f1;
+}
+html[data-sms-classic-view="directory"] #sms-classic-portal { flex: none; min-height: 0; }
+html[data-sms-classic-view="directory"] #sms-classic-portal main { padding: 12px 20px 8px; background: #fff; }
+#sms-classic-portal .sms-directory-heading { margin-bottom: 0; }
+html[data-sms-classic-view="directory"] #app:not(.sms-directory-path),
+html[data-sms-classic-view="directory"] #app.sms-directory-path > :not(.sms-directory-path, .el-overlay),
+html[data-sms-classic-view="directory"] #app .sms-directory-path:not(.directory-system) > :not(.sms-directory-path, .el-overlay) { display: none !important; }
+html[data-sms-classic-view="directory"] #app.sms-directory-path,
+html[data-sms-classic-view="directory"] #app .sms-directory-path:not(.directory-system) { display: contents !important; }
+
+html[data-sms-classic-view="directory"] #app .directory-system {
+  --el-color-primary: #870d14;
+  box-sizing: border-box;
+  flex: 1 0 340px;
+  width: min(1420px, 100%);
+  height: auto;
+  margin: 0 auto;
+  padding: 0 20px 16px;
+  color: #383838;
+  background: #fff;
+  font: 14px/1.5 "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+html[data-sms-classic-view="directory"] #app :is(.search-card, .data-card) {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+html[data-sms-classic-view="directory"] #app .search-card { margin-bottom: 8px; }
+html[data-sms-classic-view="directory"] #app .sms-directory-mail-status { display: none !important; }
+html[data-sms-classic-view="directory"] #app .search-card > .el-card__body { padding: 4px 0 8px; }
+html[data-sms-classic-view="directory"] #app .data-card > .el-card__body { padding: 0; }
+html[data-sms-classic-view="directory"] #app :is(.filter-actions-row, .pagination-bar .el-pagination) { flex-wrap: wrap; white-space: normal; }
+html[data-sms-classic-view="directory"] #app .pagination-bar .el-pagination { justify-content: center; }
+html[data-sms-classic-view="directory"] #app :is(.el-input__wrapper, .el-select__wrapper) {
+  border-radius: 2px;
+  --el-input-border-color: #aaa;
+  --el-border-color: #aaa;
+}
+html[data-sms-classic-view="directory"] #app :is(.filter-actions-row .el-button, .letter-item, .pagination-bar button) {
+  border: 1px solid #aaa;
+  border-radius: 2px;
+  color: #383838;
+  background: #eee;
+}
+html[data-sms-classic-view="directory"] #app :is(.filter-actions-row .el-button, .letter-item, .pagination-bar button):hover { color: #870d14; }
+html[data-sms-classic-view="directory"] #app :is(.filter-actions-row .el-button, .letter-item):focus-visible { outline: 2px solid #870d14; outline-offset: 2px; }
+html[data-sms-classic-view="directory"] #app :is(.letter-item.is-active, .pagination-bar .el-pager .is-active) {
+  border-color: #738aa3;
+  color: #fff;
+  background: #738aa3;
+}
+html[data-sms-classic-view="directory"] #app .letter-bar { padding: 5px 0 8px; border-top: 1px solid #ddd; }
+html[data-sms-classic-view="directory"] #app .directory-table {
+  --el-table-header-bg-color: #738aa3;
+  --el-table-header-text-color: #fff;
+  --el-table-tr-bg-color: #eee;
+  --el-fill-color-lighter: #f7f7f7;
+  --el-table-border-color: #fff;
+  --el-table-row-hover-bg-color: #fff2e9;
+}
+html[data-sms-classic-view="directory"] #app .directory-table th.el-table__cell { font-weight: 400; }
+
 html[data-sms-classic-view="records"] #sms-classic-portal { min-height: auto; }
 #sms-classic-portal .sms-records-panel { min-width: 0; padding: 0 0 12px; background: white; }
 #sms-classic-portal .sms-records-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 3px 0; }
@@ -339,7 +410,8 @@ html[data-sms-classic-view="records"] #sms-classic-portal { min-height: auto; }
 #sms-classic-portal .sms-records-table { overflow-x: auto; }
 #sms-classic-portal .sms-records-table table { width: 100%; min-width: 580px; border-spacing: 2px; }
 #sms-classic-portal .sms-records-table :is(th, td) { text-align: center; padding: 5px 8px; background: #eee; border-bottom: 1px solid #c1c1c1; }
-#sms-classic-portal .sms-records-table tbody th { background: #738aa3; color: white; font-weight: normal; white-space: pre-line; }
+#sms-classic-portal .sms-records-table tbody th { font-weight: normal; white-space: pre-line; }
+#sms-classic-portal .sms-overview-grid tbody th { background: #738aa3; color: white; }
 #sms-classic-portal .sms-records-table tbody td button { margin-inline: 4px; color: #900000; text-decoration: underline; }
 #sms-classic-portal .sms-records-table td[data-status="current"] { color: #174dbc; }
 #sms-classic-portal .sms-records-table td[data-status="inactive"] { color: #900000; }
@@ -369,6 +441,8 @@ html[data-sms-classic-view="records"] #app .sms-records-source :has(.el-overlay)
 @media (max-width: 650px) {
   #sms-classic-portal header { min-height: 90px; }
   #sms-classic-portal main { padding: 12px; }
+  html[data-sms-classic-view="directory"] #app .directory-system { padding-inline: 12px; }
+  html[data-sms-classic-view="directory"] #app .search-card .el-col { margin-bottom: 6px; }
   #sms-classic-portal .sms-grid { grid-template-columns: 1fr; grid-template-rows: repeat(4, minmax(190px, auto)); height: auto; }
   #sms-classic-portal .sms-panel { padding-inline: 12px; }
   #sms-classic-portal .sms-booking-layout { grid-template-columns: 1fr; }

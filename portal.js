@@ -4,6 +4,7 @@
   const localSectionParam = 'mathidiot-section';
   const homePath = '/schedule';
   const listingPath = '/schedule/academic-notice';
+  const directoryPath = '/directory/index';
   const roomsPath = '/activity-room/activity-room';
   const bookingPath = '/activity-room/quick-book';
   const recordsPath = '/activity-room/my-reservations';
@@ -15,11 +16,10 @@
   const logoutKey = 'sms-classic-logout-pending';
   const archive = 'http://portal.math.pku.edu.cn/htdocs/main.php';
   const archiveArticle = 'http://portal.math.pku.edu.cn/htdocs/showarticle.php';
-  const services = [
-    ['讨论室预约', '/activity-room/activity-room'],
+  const bookingServices = [
+    ['讨论室预约', roomsPath],
     ['我的预约', recordsPath],
     ['预约总览', overviewPath],
-    ['教师查询', 'https://math.pku.edu.cn/jsdw/js/index.htm'],
   ];
 
   function element(tag, label) {
@@ -39,6 +39,24 @@
     node.type = 'button';
     node.addEventListener('click', action);
     return node;
+  }
+
+  function navigationMenu(label, entries) {
+    const menu = element('details');
+    menu.setAttribute('name', 'sms-navigation');
+    const items = element('ul');
+    for (const [name, href] of entries) {
+      const item = element('li');
+      const destination = link(name, href);
+      if (destination.origin !== location.origin) {
+        destination.target = '_blank';
+        destination.rel = 'noopener noreferrer';
+      }
+      item.append(destination);
+      items.append(item);
+    }
+    menu.append(element('summary', label), items);
+    return menu;
   }
 
   const root = document.documentElement;
@@ -73,15 +91,15 @@
   headerLinks.append(feedback);
   header.append(brand, headerLinks);
   const nav = element('nav');
-  const menu = element('details');
-  const links = element('ul');
-  for (const [label, href] of services) {
-    const item = element('li');
-    item.append(link(label, href));
-    links.append(item);
-  }
-  menu.append(element('summary', '常用服务'), links);
-  nav.append(link('通知首页', homePath), menu);
+  nav.setAttribute('aria-label', '主导航');
+  nav.append(
+    link('通知首页', homePath),
+    navigationMenu('教室预约', bookingServices),
+    navigationMenu('学院教师', [
+      ['教师队伍', 'https://math.pku.edu.cn/jsdw/js_20180628175159671361/index.htm'],
+      ['学院通讯录', directoryPath],
+    ]),
+  );
   container.append(header, nav, main);
 
   let frame = 0;
@@ -1341,6 +1359,25 @@
     }
   }
 
+  function refreshDirectory(app) {
+    const directory = app.querySelector('.directory-system');
+    for (const tag of directory?.querySelectorAll('.search-card .el-tag') ?? []) {
+      tag.classList.toggle('sms-directory-mail-status', tag.textContent.trim() === '邮箱全部合格');
+    }
+    for (let node = directory; node; node = node.parentElement) {
+      node.classList.add('sms-directory-path');
+      if (node === app) break;
+    }
+    root.dataset.smsClassicView = 'directory';
+    const next = directory ? 'directory' : 'directory-loading';
+    if (next === signature) return;
+    signature = next;
+    const heading = element('h2', '学院通讯录');
+    heading.className = 'sms-directory-heading';
+    main.replaceChildren(heading);
+    if (!directory) main.append(element('p', '正在加载通讯录…'));
+  }
+
   function refresh() {
     frame = 0;
     const path = location.pathname;
@@ -1373,7 +1410,7 @@
     if (original) {
       if (!returnBookmark.isConnected) document.body.append(returnBookmark);
     } else returnBookmark.remove();
-    if (!app || original || ![homePath, listingPath, roomsPath, bookingPath, recordsPath, overviewPath].includes(path)) {
+    if (!app || original || ![homePath, listingPath, roomsPath, bookingPath, recordsPath, overviewPath, directoryPath].includes(path)) {
       container.remove();
       delete root.dataset.smsClassicView;
       signature = '';
@@ -1390,6 +1427,11 @@
     if ([roomsPath, bookingPath].includes(path)) {
       if (!container.isConnected) app.before(container);
       refreshBooking(app, path);
+      return;
+    }
+    if (path === directoryPath) {
+      if (!container.isConnected) app.before(container);
+      refreshDirectory(app);
       return;
     }
     loadArchive();
