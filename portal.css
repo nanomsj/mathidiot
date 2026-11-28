@@ -145,8 +145,32 @@ html[data-sms-classic-view] > body { scrollbar-width: none; }
 #sms-classic-portal time { color: var(--sms-red); white-space: nowrap; font-size: 13px; }
 #sms-classic-portal .sms-grid time { font-size: 12px; }
 #sms-classic-portal .sms-listing .sms-notice-list li { padding-block: 7px; border-bottom: 1px solid #e9e9e9; }
+#sms-classic-portal .sms-listing .sms-panel-heading { align-items: center; flex-wrap: wrap; }
+#sms-classic-portal .sms-notice-search:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  max-width: 100%;
+  margin: 0 0 0 auto;
+  font-size: 13px;
+}
+#sms-classic-portal .sms-notice-search input {
+  width: clamp(108px, 25vw, 155px);
+  max-width: 100%;
+  padding: 3px 6px;
+  border: 1px solid #bcbcbc;
+  border-radius: 3px;
+  background: #fff;
+  font: inherit;
+}
+#sms-classic-portal .sms-notice-search input:focus { outline: 1px solid #777; outline-offset: 1px; }
+#sms-classic-portal .sms-notice-search button { padding: 3px 1px; color: #555; white-space: nowrap; }
+html[data-sms-classic-view="classic"] .el-select__popper:has(.sms-notice-page-sizes) { visibility: hidden; }
 #sms-classic-portal .sms-pagination { display: flex; align-items: center; gap: 16px; margin-top: 18px; font-size: 14px; }
 #sms-classic-portal .sms-article-page { max-width: 1130px; margin: 0 auto; }
+html:has(#sms-classic-portal .sms-obituary) { filter: grayscale(1); }
 #sms-classic-portal .sms-article-page > button { margin: 0 0 9px 4px; font-size: 13px; color: #900000; }
 #sms-classic-portal .sms-article-page > .sms-panel {
   padding: 0 0 12px;

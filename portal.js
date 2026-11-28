@@ -107,6 +107,10 @@
   let panels = new Map();
   let listing = null;
   let listedTitles = new Set();
+  let noticeQuery = '';
+  let noticeResultPage = 1;
+  let noticePageSize = '';
+  let changingNoticeSearch = false;
   let article = null;
   let pending = null;
   let listingTitle = '';
@@ -219,6 +223,7 @@
       previous: page.querySelector('.el-pagination .btn-prev:not(:disabled)'),
       next: page.querySelector('.el-pagination .btn-next:not(:disabled)'),
       search: page.querySelector('.filter-bar input'),
+      size: page.querySelector('.el-pagination__sizes .el-select'),
     };
   }
 
@@ -554,46 +559,177 @@
     return groups.find(label => listing?.label?.includes(label)) ?? listingTitle;
   }
 
+  function noticeSize(select) {
+    return select ? text(select, '.el-select__placeholder').match(/\d+/)?.[0] ?? '' : '';
+  }
+
+  async function selectNoticeSize(size) {
+    const select = document.querySelector('.academic-notice-container .el-pagination__sizes .el-select');
+    const wrapper = select?.querySelector('.el-select__wrapper');
+    const input = select?.querySelector('input[aria-controls]');
+    if (!wrapper || !input || noticeSize(select) === size) return;
+    const options = () => document.getElementById(input.getAttribute('aria-controls') ?? '');
+    options()?.classList.add('sms-notice-page-sizes');
+    wrapper.click();
+    await new Promise(requestAnimationFrame);
+    const list = options();
+    list?.classList.add('sms-notice-page-sizes');
+    const option = [...(list?.querySelectorAll('[role="option"]') ?? [])].find((item) =>
+      item.textContent.match(/\d+/)?.[0] === size);
+    if (option) option.click();
+    else if (input.getAttribute('aria-expanded') === 'true') wrapper.click();
+    await new Promise(requestAnimationFrame);
+  }
+
+  async function searchNotices(value) {
+    const input = listing?.search;
+    const url = lastUrl;
+    if (!input || changingNoticeSearch) return;
+    changingNoticeSearch = true;
+    try {
+      const query = value.trim();
+      if (query) {
+        if (!noticeQuery) noticePageSize = noticeSize(listing.size);
+        // MathSmart also matches notice bodies. Read all native matches before filtering by title.
+        if (noticePageSize) await selectNoticeSize('1000');
+      }
+      if (lastUrl !== url || !input.isConnected) return;
+      noticeQuery = query;
+      noticeResultPage = 1;
+      input.value = query;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      if (!query && noticePageSize) {
+        await new Promise(requestAnimationFrame);
+        if (lastUrl === url) await selectNoticeSize(noticePageSize);
+        noticePageSize = '';
+      }
+    } finally {
+      changingNoticeSearch = false;
+      scheduleRefresh();
+    }
+  }
+
+  function renderNoticeSearch() {
+    const form = element('form');
+    form.className = 'sms-notice-search';
+    const input = element('input');
+    input.type = 'search';
+    input.placeholder = '搜索标题';
+    input.setAttribute('aria-label', '搜索新版通知标题');
+    input.value = noticeQuery;
+    const submit = element('button', '搜索');
+    submit.type = 'submit';
+    const clear = button('清空', () => submitQuery(''));
+    async function submitQuery(value) {
+      if (changingNoticeSearch) return;
+      input.value = value.trim();
+      input.readOnly = submit.disabled = clear.disabled = true;
+      try {
+        await searchNotices(input.value);
+      } finally {
+        input.readOnly = submit.disabled = clear.disabled = false;
+      }
+    }
+    form.append(input, submit, clear);
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      submitQuery(input.value);
+    });
+    input.addEventListener('search', () => {
+      if (!input.value && noticeQuery) submitQuery('');
+    });
+    return form;
+  }
+
+  function noticePagination(current, previous, next, total) {
+    const pagination = element('div');
+    pagination.className = 'sms-pagination';
+    if (current) {
+      const back = button('上一页', previous);
+      const forward = button('下一页', next);
+      back.disabled = !previous;
+      forward.disabled = !next;
+      pagination.append(back, element('span', '第 ' + current + ' 页'), forward);
+    }
+    if (total) pagination.append(element('span', total));
+    return pagination;
+  }
+
+  function nativeNoticePagination(total) {
+    return noticePagination(
+      listing.current,
+      listing.previous && (() => listing?.previous?.click()),
+      listing.next && (() => listing?.next?.click()),
+      total,
+    );
+  }
+
+  function renderNoticeResults(panel) {
+    const keyword = noticeQuery.toLowerCase();
+    const matches = listing.rows.filter(({ title }) => title.toLowerCase().includes(keyword));
+    const message = element('p', '未找到标题匹配的新版通知。');
+    if (listing.next || listing.previous) {
+      panel.append(matches.length ? rowList(matches) : message, nativeNoticePagination());
+      return;
+    }
+    const pageSize = Number(noticePageSize) || 20;
+    const start = (noticeResultPage - 1) * pageSize;
+    const records = matches.slice(start, start + pageSize);
+    const changePage = (delta) => {
+      noticeResultPage += delta;
+      scheduleRefresh();
+    };
+    panel.append(records.length ? rowList(records) : message, noticePagination(
+      matches.length > pageSize ? noticeResultPage : null,
+      noticeResultPage > 1 ? () => changePage(-1) : null,
+      start + pageSize < matches.length ? () => changePage(1) : null,
+      '共 ' + matches.length + ' 条',
+    ));
+  }
+
   function renderListing() {
-    const panel = element('section');
-    panel.className = 'sms-panel sms-listing';
-    const heading = element('div');
-    heading.className = 'sms-panel-heading';
+    const panel = main.querySelector(':scope > .sms-listing') ?? element('section');
+    if (!panel.firstChild) {
+      panel.className = 'sms-panel sms-listing';
+      const heading = element('div');
+      heading.className = 'sms-panel-heading';
+      heading.append(element('h2'), renderNoticeSearch());
+      panel.append(heading, element('div'));
+    }
     const localGroup = new URLSearchParams(location.search).get(localSectionParam);
     const label = listingGroup();
-    heading.append(element('h2', localGroup || label || listing?.label || '通知列表'));
-    panel.append(heading);
+    panel.querySelector('h2').textContent = localGroup || label || listing?.label || '通知列表';
+    panel.querySelector('.sms-notice-search').hidden = groups.includes(localGroup) || Boolean(queuedNotice) || !listing?.search;
+    const results = panel.lastElementChild;
+    results.replaceChildren();
     if (groups.includes(localGroup)) {
       const records = combineNotices(panels.get(localGroup)?.rows ?? [], localGroup);
-      if (records.length) panel.append(rowList(records));
-      else if (archiveStatus === 'loading') panel.append(element('p', '正在加载旧站通知…'));
-      else panel.append(element('p', archiveStatus === 'unavailable' ? '旧站通知暂时无法加载' : '暂无通知'));
+      if (records.length) results.append(rowList(records));
+      else if (archiveStatus === 'loading') results.append(element('p', '正在加载旧站通知…'));
+      else results.append(element('p', archiveStatus === 'unavailable' ? '旧站通知暂时无法加载' : '暂无通知'));
       return panel;
     }
     if (queuedNotice) {
-      panel.append(element('p', Date.now() - queuedNotice.started > 5000
+      results.append(element('p', Date.now() - queuedNotice.started > 5000
         ? '未在栏目中找到这条通知。' : '正在查找通知正文…'));
-      panel.append(link('返回通知首页', homePath));
+      results.append(link('返回通知首页', homePath));
       return panel;
     }
     if (!listing || (!listing.rows.length && !listing.empty)) {
-      panel.append(element('p', '正在加载通知…'));
+      results.append(element('p', '正在加载通知…'));
+      return panel;
+    }
+    if (noticeQuery) {
+      renderNoticeResults(results);
       return panel;
     }
     const records = listing.next ? listing.rows : combineNotices(listing.rows, label, listedTitles);
-    panel.append(records.length ? rowList(records) : element('p', archiveStatus === 'loading' ? '正在加载旧站通知…' : '暂无通知'));
+    results.append(records.length ? rowList(records) : element('p', archiveStatus === 'loading' ? '正在加载旧站通知…' : '暂无通知'));
     if (!listing.next && groups.includes(label) && archiveStatus === 'unavailable') {
-      panel.append(element('p', '旧站通知暂时无法加载'));
+      results.append(element('p', '旧站通知暂时无法加载'));
     }
-    const pagination = element('div');
-    pagination.className = 'sms-pagination';
-    const previous = button('上一页', () => listing?.previous?.click());
-    const next = button('下一页', () => listing?.next?.click());
-    previous.disabled = !listing.previous;
-    next.disabled = !listing.next;
-    if (listing.current) pagination.append(previous, element('span', '第 ' + listing.current + ' 页'), next);
-    if (listing.total) pagination.append(element('span', listing.total));
-    if (pagination.childElementCount) panel.append(pagination);
+    const pagination = nativeNoticePagination(listing.total);
+    if (pagination.childElementCount) results.append(pagination);
     return panel;
   }
 
@@ -603,6 +739,7 @@
     const panel = element('article');
     panel.className = 'sms-panel sms-article';
     const record = article;
+    if (record.title.includes('讣告')) page.classList.add('sms-obituary');
     page.append(button(!record.fromHome && location.pathname === listingPath ? '返回栏目列表' : '返回通知首页', () => {
       if (record.fromHome) {
         location.assign(homePath);
@@ -1390,6 +1527,11 @@
       lastUrl = viewUrl;
       article = null;
       listedTitles = new Set();
+      noticeQuery = '';
+      noticeResultPage = 1;
+      noticePageSize = '';
+      const searchInput = main.querySelector('.sms-notice-search input');
+      if (searchInput) searchInput.value = '';
       signature = '';
       window.scrollTo(0, 0);
     }
@@ -1457,13 +1599,14 @@
     root.dataset.smsClassicView = 'classic';
     const data = path === homePath
       ? [...panels].map(([label, { more, rows }]) => [label, !!more, rows.map(({ title, date }) => [title, date])])
-      : listing && [listing.label, listing.total, listing.current, listing.empty,
+      : listing && [listing.label, listing.total, listing.current, listing.empty, Boolean(listing.search), noticeQuery, noticeResultPage,
         listing.rows.map(({ title, date }) => [title, date])];
     const next = article ? JSON.stringify([article.title, article.loading]) : JSON.stringify([path, data, archiveStatus]);
     if (signature === next) return;
     signature = next;
     homeSize.disconnect();
-    main.replaceChildren(article ? renderArticle() : path === homePath ? renderHome() : renderListing());
+    const view = article ? renderArticle() : path === homePath ? renderHome() : renderListing();
+    if (main.firstElementChild !== view) main.replaceChildren(view);
     const grid = main.querySelector('.sms-home-grid');
     if (grid) {
       fitHome(grid);
